@@ -24,6 +24,7 @@ print_help () {
 	printf "Commands:\n"
 	printf "\tinstall [binary-version] - Install rathole binary, if version is not given, interactive prompt will ask you\n"
 	printf "\tuninstall\n"
+	printf "\tpurge - Uninstalls Rathole and removes all configuration files\n"
 	printf "\tlist\n"
 }
 
@@ -53,8 +54,7 @@ ExecStart=$INSTALL_DIR/rathole $CONFIG_DIR/config.toml
 WantedBy=multi-user.target"
 }
 
-case "$1" in
-	install)
+install () {
 		[ "$UID" -eq 0 ] || { logw "This script must be run as root."; exit 1;}
 		SEL=$2
 		if [[ -z "$SEL" ]]; then
@@ -91,13 +91,12 @@ case "$1" in
 		logi "Starting service"
 		systemctl start rathole
 		logi "Rathole has been successfully installed"
-		;;
-	uninstall)
+}
+
+uninstall () {
 		[ "$UID" -eq 0 ] || { logw "This script must be run as root."; exit 1;}
 		logi "Removing rathole binary $INSTALL_DIR/rathole"
 		sudo rm $INSTALL_DIR/rathole
-		logi "Removing config directory $CONFIG_DIR"
-		sudo rm -R $CONFIG_DIR
 		logi "Removing service"
 		sudo rm -R $CONFIG_DIR
 		systemctl stop rathole
@@ -105,6 +104,24 @@ case "$1" in
 		sudo rm -R $SERVICE_FILE
 		systemctl daemon-reload
 		logi "Rathole has been successfully uninstalled"
+}
+
+purge () {
+	logi "Removing config directory $CONFIG_DIR"
+	sudo rm -R $CONFIG_DIR
+	uninstall
+}
+
+case "$1" in
+	install)
+		install
+		;;
+	uninstall)
+		uninstall
+		exit
+		;;
+	purge)
+		purge
 		exit
 		;;
 	list)
