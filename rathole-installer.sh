@@ -54,9 +54,13 @@ ExecStart=$INSTALL_DIR/rathole $CONFIG_DIR/config.toml
 WantedBy=multi-user.target"
 }
 
+check_root () {
+	[ "$UID" -eq 0 ] || { logw "This script must be run as root."; exit 1;}
+}
+
 install () {
-		[ "$UID" -eq 0 ] || { logw "This script must be run as root."; exit 1;}
-		SEL=$2
+		check_root
+		SEL=$1
 		if [[ -z "$SEL" ]]; then
 			print_binaries
 			printf "Select binary to install: "
@@ -94,12 +98,12 @@ install () {
 }
 
 uninstall () {
-		[ "$UID" -eq 0 ] || { logw "This script must be run as root."; exit 1;}
+		check_root
+		logi "Stopping service"
+		systemctl stop rathole
 		logi "Removing rathole binary $INSTALL_DIR/rathole"
 		sudo rm $INSTALL_DIR/rathole
 		logi "Removing service"
-		sudo rm -R $CONFIG_DIR
-		systemctl stop rathole
 		systemctl disable rathole
 		sudo rm -R $SERVICE_FILE
 		systemctl daemon-reload
@@ -107,6 +111,7 @@ uninstall () {
 }
 
 purge () {
+	check_root
 	logi "Removing config directory $CONFIG_DIR"
 	sudo rm -R $CONFIG_DIR
 	uninstall
@@ -114,7 +119,7 @@ purge () {
 
 case "$1" in
 	install)
-		install
+		install $2
 		;;
 	uninstall)
 		uninstall
